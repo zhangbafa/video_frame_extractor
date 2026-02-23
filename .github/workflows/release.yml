@@ -15,11 +15,17 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-latest
-            platform: macos
+          - os: macos-14
+            platform: macos-arm64
+            artifact: macos-arm64
+            ext: ''
+          - os: macos-13
+            platform: macos-x64
+            artifact: macos-x64
             ext: ''
           - os: windows-latest
             platform: windows
+            artifact: windows
             ext: '.exe'
 
     steps:
@@ -44,7 +50,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: video-extract-${{ matrix.platform }}
+          name: video-extract-${{ matrix.artifact }}
           path: dist/video-extract${{ matrix.ext }}
 
   release:
@@ -67,17 +73,29 @@ jobs:
           )
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Download macOS artifact
+      - name: Download macOS ARM64 artifact
         uses: actions/download-artifact@v4
         with:
-          name: video-extract-macos
-          path: dist/macos
+          name: video-extract-macos-arm64
+          path: dist/macos-arm64
+
+      - name: Download macOS x64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: video-extract-macos-x64
+          path: dist/macos-x64
 
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
           name: video-extract-windows
           path: dist/windows
+
+      - name: Rename artifacts
+        run: |
+          mv dist/macos-arm64/video-extract dist/video-extract-macos-arm64
+          mv dist/macos-x64/video-extract dist/video-extract-macos-x64
+          mv dist/windows/video-extract.exe dist/video-extract-windows.exe
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -89,24 +107,26 @@ jobs:
             
             ### 下载
             
-            | 平台 | 文件 |
-            | --- | --- |
-            | macOS | video-extract (下方下载) |
-            | Windows | video-extract.exe (下方下载) |
+            | 平台 | 架构 | 文件 |
+            | --- | --- | --- |
+            | macOS | Apple Silicon (M1/M2/M3) | video-extract-macos-arm64 |
+            | macOS | Intel (x86_64) | video-extract-macos-x64 |
+            | Windows | x86_64 | video-extract-windows.exe |
             
             ### macOS 使用方法
             ```bash
-            chmod +x video-extract
-            ./video-extract -i video.mp4 -o frames -m time -t 5
+            chmod +x video-extract-macos-*
+            ./video-extract-macos-arm64 -i video.mp4 -o frames -m time -t 5
             ```
             
             ### Windows 使用方法
             ```cmd
-            video-extract.exe -i video.mp4 -o frames -m time -t 5
+            video-extract-windows.exe -i video.mp4 -o frames -m time -t 5
             ```
           files: |
-            dist/macos/video-extract
-            dist/windows/video-extract.exe
+            dist/video-extract-macos-arm64
+            dist/video-extract-macos-x64
+            dist/video-extract-windows.exe
           draft: false
           prerelease: false
         env:
