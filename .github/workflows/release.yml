@@ -33,7 +33,13 @@ jobs:
       - name: Get version
         id: version
         run: |
-          VERSION=$(python -c "import re; content=open('video_frame_extractor/__init__.py').read(); print(re.search(r'__version__\s*=\s*[\"']([^\"']+)[\"']', content).group(1))")
+          VERSION=$(python << 'EOF'
+          import re
+          with open('video_frame_extractor/__init__.py') as f:
+              match = re.search(r"__version__\s*=\s*['\"]([^'\"]+)['\"]", f.read())
+              print(match.group(1) if match else '0.0.0')
+          EOF
+          )
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create Release
